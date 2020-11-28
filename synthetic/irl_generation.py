@@ -126,12 +126,12 @@ def main():
     generate_samples(sess, target_lstm, BATCH_SIZE, generated_num, positive_file)
     gen_data_loader.create_batches(positive_file)
     # ground_loss = target_loss(sess, target_lstm, gen_data_loader)
-    # print 'Ground-Truth:', ground_loss
+    # print('Ground-Truth:', ground_loss)
 
     log = open('save/experiment-ent'+str(entropy_w), 'w')
     #  pre-train generator
     if restore is False:
-        print 'Start pre-training...'
+        print('Start pre-training...')
         log.write('pre-training...\n')
         for epoch in xrange(PRE_EPOCH_NUM):
             loss = pre_train_epoch(sess, generator, gen_data_loader)
@@ -139,11 +139,11 @@ def main():
                 generate_samples(sess, generator, BATCH_SIZE, generated_num, eval_file)
                 likelihood_data_loader.create_batches(eval_file)
                 test_loss = target_loss(sess, target_lstm, likelihood_data_loader)
-                print 'pre-train epoch ', epoch, 'test_loss ', test_loss
+                print('pre-train epoch ', epoch, 'test_loss ', test_loss)
                 buffer = 'epoch:\t'+ str(epoch) + '\tnll:\t' + str(test_loss) + '\n'
                 log.write(buffer)
 
-        print 'Start pre-training rewarder...'
+        print('Start pre-training rewarder...')
         start = time.time()
         for _ in range(1):
             generate_samples(sess, generator, BATCH_SIZE, generated_num, negative_file)
@@ -156,14 +156,14 @@ def main():
                     x_text = dis_data_loader.next_batch()
                     _, r_loss = rewarder.reward_train_step(sess, x_text, np.ones(BATCH_SIZE), 1.0, re_dropout_keep_prob, 0.01)
                     r_losses.append(r_loss)
-                print 'reward_loss', np.mean(r_losses)
+                print('reward_loss', np.mean(r_losses))
         speed = time.time() - start
-        print 'Reward pre_training Speed:{:.3f}'.format(speed)
+        print('Reward pre_training Speed:{:.3f}'.format(speed))
 
         checkpoint_path = os.path.join('save', 'exper_40.ckpt')
         saver.save(sess, checkpoint_path)
     else:
-        print 'Restore pretrained model ...'
+        print('Restore pretrained model ...')
         log.write('Restore pre-trained model...\n')
         ckpt = tf.train.get_checkpoint_state('save')
         saver.restore(sess, ckpt.model_checkpoint_path)
@@ -171,8 +171,8 @@ def main():
     # by setting the parameters to 0.0 and 1.0, we didn't use the mixed policy RL training in SeqGAN
     rollout = ROLLOUT(generator, 0.0, 1.0)
 
-    print '#########################################################################'
-    print 'Start Adversarial Training...'
+    print('#########################################################################')
+    print('Start Adversarial Training...')
     log.write('adversarial training...\n')
     for total_batch in range(TOTAL_BATCH):
 
@@ -181,7 +181,7 @@ def main():
             likelihood_data_loader.create_batches(eval_file)
             test_loss = target_loss(sess, target_lstm, likelihood_data_loader)
             buffer = 'epoch:\t' + str(total_batch) + '\tnll:\t' + str(test_loss) + '\n'
-            print 'total_batch: ', total_batch, 'test_loss: ', test_loss
+            print('total_batch: ', total_batch, 'test_loss: ', test_loss)
             log.write(buffer)
 
         # Train the generator for one step
@@ -199,7 +199,7 @@ def main():
                     _, g_loss = generator.rl_train_step(sess, off_samples[it2], avg_reward[it2], baseline, off_probs[it2], entropy_w, G_rate)
                     g_losses.append(g_loss)
         speed = time.time() - start
-        print 'MaxentPolicy Gradient {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, np.mean(g_losses))
+        print('MaxentPolicy Gradient {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, np.mean(g_losses)))
 
         # Update roll-out parameters
         rollout.update_params()
@@ -218,7 +218,7 @@ def main():
                     _, r_loss = rewarder.reward_train_step(sess, x_text, weights, 1, re_dropout_keep_prob, R_rate * np.exp(-(total_batch // R_decay)))
                     r_loss_list.append(r_loss)
         speed = time.time() - start
-        print 'Reward training {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, np.mean(r_loss_list))
+        print('Reward training {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, np.mean(r_loss_list)))
 
     log.close()
 
