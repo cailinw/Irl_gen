@@ -11,9 +11,9 @@ Tensorflow >=1.2.0
 nltk == 3.2.5
 
 ```bash
-conda create -n irl-project python=2.7
-conda env update -n irl-project -f environment.yml
-conda activate irl-project
+conda create -n rl-project python=3.6
+conda env update -n rl-project -f environment.yml
+conda activate rl-project
 ```
 
 ## Synthetic
