@@ -1,12 +1,15 @@
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import random
 from dataloader import Gen_Data_loader, Dis_dataloader
 from generator import Generator
 from rewarder import Rewarder
 from rollout_ppo import ROLLOUT
 from target_lstm import TARGET_LSTM
-import cPickle
+#import cPickle
+import pickle
 import os
 import time
 
@@ -77,7 +80,7 @@ def target_loss(sess, target_lstm, data_loader):
     nll = []
     data_loader.reset_pointer()
 
-    for it in xrange(data_loader.num_batch):
+    for it in range(data_loader.num_batch):
         batch = data_loader.next_batch()
         g_loss = sess.run(target_lstm.pretrain_loss, {target_lstm.x: batch})
         nll.append(g_loss)
@@ -90,7 +93,7 @@ def pre_train_epoch(sess, trainable_model, data_loader):
     supervised_g_losses = []
     data_loader.reset_pointer()
 
-    for it in xrange(data_loader.num_batch):
+    for it in range(data_loader.num_batch):
         batch = data_loader.next_batch()
         _, g_loss = trainable_model.pretrain_step(sess, batch)
         supervised_g_losses.append(g_loss)
@@ -113,7 +116,7 @@ def main():
 
     generator = Generator(vocab_size, BATCH_SIZE, EMB_DIM, HIDDEN_DIM, SEQ_LENGTH, START_TOKEN, MID_LAYER_G)
     rewarder = Rewarder(vocab_size, BATCH_SIZE, EMB_DIM * 4, HIDDEN_DIM * 4, SEQ_LENGTH, START_TOKEN, MID_LAYER_R, l2_reg_lambda=re_l2_reg_lambda)
-    target_params = cPickle.load(open('save/target_params.pkl'))
+    target_params = pickle.load(open("save/target_params.pkl", "rb"), encoding="latin1")
     target_lstm = TARGET_LSTM(vocab_size, BATCH_SIZE, EMB_DIM, HIDDEN_DIM, SEQ_LENGTH, START_TOKEN, target_params) # The oracle model
 
     config = tf.ConfigProto()
@@ -133,7 +136,7 @@ def main():
     if restore is False:
         print('Start pre-training...')
         log.write('pre-training...\n')
-        for epoch in xrange(PRE_EPOCH_NUM):
+        for epoch in range(PRE_EPOCH_NUM):
             loss = pre_train_epoch(sess, generator, gen_data_loader)
             if epoch % 5 == 0:
                 generate_samples(sess, generator, BATCH_SIZE, generated_num, eval_file)
@@ -152,7 +155,7 @@ def main():
             for _ in range(1):
                 dis_data_loader.reset_pointer()
                 r_losses = []
-                for it in xrange(dis_data_loader.num_batch):
+                for it in range(dis_data_loader.num_batch):
                     x_text = dis_data_loader.next_batch()
                     _, r_loss = rewarder.reward_train_step(sess, x_text, np.ones(BATCH_SIZE), 1.0, re_dropout_keep_prob, 0.01)
                     r_losses.append(r_loss)
@@ -212,7 +215,7 @@ def main():
             dis_data_loader.load_train_data(positive_file, negative_file)
             for _ in range(3):
                 dis_data_loader.reset_pointer()
-                for it in xrange(dis_data_loader.num_batch):
+                for it in range(dis_data_loader.num_batch):
                     x_text= dis_data_loader.next_batch()
                     weights = rewarder.reward_weight(sess, x_text, generator)
                     _, r_loss = rewarder.reward_train_step(sess, x_text, weights, 1, re_dropout_keep_prob, R_rate * np.exp(-(total_batch // R_decay)))

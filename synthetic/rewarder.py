@@ -2,7 +2,9 @@
 """
 @author: Samzhanshi
 """
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from tensorflow.python.ops import tensor_array_ops, control_flow_ops
 import numpy as np
 
@@ -268,7 +270,7 @@ class Rewarder(object):
         assert len(midlayer) == 3
         self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[0], midlayer[1]])))
         self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[1]])))
-        for j in xrange(num_highway):
+        for j in range(num_highway):
             self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[1], midlayer[1]])))
             self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[1]])))
             self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[1], midlayer[1]])))
@@ -282,7 +284,7 @@ class Rewarder(object):
             hidden_state, c_prev = tf.unstack(hidden_memory_tuple)
             hidden_state = tf.nn.relu(tf.nn.xw_plus_b(hidden_state, self.Wbo_list[0], self.Wbo_list[1]))
             # Use high-way network, FeedForward network also works
-            for i in xrange(num_highway):
+            for i in range(num_highway):
                 tran = tf.nn.relu(tf.nn.xw_plus_b(hidden_state, self.Wbo_list[2 + 4 * i], self.Wbo_list[3 + 4 * i]))
                 gate = tf.nn.sigmoid(tf.nn.xw_plus_b(hidden_state, self.Wbo_list[4 + 4 * i], self.Wbo_list[5 + 4 * i]))
                 hidden_state = tran * gate + (1. - gate) * hidden_state
