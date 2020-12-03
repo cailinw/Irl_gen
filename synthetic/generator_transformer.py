@@ -3,13 +3,20 @@ import keras
 from keras.layers import Dense
 
 import tensorflow.compat.v1 as tf
-
 tf.disable_v2_behavior()
 
 
+
 class GeneratorTransformer(object):
-    def __init__(self):
+    def __init__(self, num_emb, batch_size, sequence_length,
+                 start_token, learning_rate=0.005):
         self.network = self.init_network(10)
+
+        self.num_emb = num_emb
+        self.batch_size = batch_size
+        self.sequence_length = sequence_length
+        self.start_token = start_token
+        self.learning_rate = learning_rate
 
     """
     TODO: Edit this to be the actual architecture and hyperparameters.
@@ -40,7 +47,7 @@ class GeneratorTransformer(object):
         Not sure about last dimension, but seems like there a sampling operation and cast to int
         before the token is appended to `gen_x` in the original code, which implies that it
         is a sequence of ints which represent the word number in the vocabulary.
-        Confirm this by running on colab.
+        Confirm this by running on colab. ~ tensor of ints of shape (batch_size, seq_length)
         """
         return outputs
 
