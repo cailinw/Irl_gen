@@ -4,6 +4,9 @@ tf.disable_v2_behavior()
 from tensorflow.python.ops import tensor_array_ops, control_flow_ops
 import numpy as np
 
+# TODO: Make sure this is compatible with v1.
+import keras
+
 class Generator(object):
     def __init__(self, num_emb, batch_size, emb_dim, hidden_dim,
                  sequence_length, start_token, mid_layer,
@@ -123,7 +126,7 @@ class Generator(object):
         log_pred = tf.reduce_sum(self.clipped_log_pred, -1)
         # log_pred: batch * seq (1 dim)
         bz_log_pred = tf.reshape(log_pred, [self.batch_size, self.sequence_length])
-       # sig_bz_log_pred = tf.nn.sigmoid(tf.reshape(log_pred, [self.batch_size, self.sequence_length]))
+        # sig_bz_log_pred = tf.nn.sigmoid(tf.reshape(log_pred, [self.batch_size, self.sequence_length]))
         sig_bz_log_pred = tf.reshape(log_pred, [self.batch_size, self.sequence_length])
         accumlated_pred = tf.matmul(sig_bz_log_pred, tf.constant(np.tri(self.sequence_length), dtype=tf.float32))
         accumlated_pred = tf.stop_gradient(accumlated_pred)
