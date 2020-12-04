@@ -5,6 +5,9 @@ from keras.layers import Dense
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
+from transformers import GPT2Tokenizer, TFGPT2Model
+from transformers import Trainer, TrainingArguments
+from transformers import pipeline, set_seed
 
 
 class GeneratorTransformer(object):
@@ -18,17 +21,20 @@ class GeneratorTransformer(object):
         self.start_token = start_token
         self.learning_rate = learning_rate
 
+        self.output_dir = "./gpt2-irl"
+
     """
     TODO: Edit this to be the actual architecture and hyperparameters.
     """
 
     def init_network(self, input_shape, num_outputs=10):
 
-        network = keras.Sequential()
-        network.add(Dense(input_shape, activation="relu"))
-        network.add(Dense(units=num_outputs, activation="softmax"))
+        # network = keras.Sequential()
+        # network.add(Dense(input_shape, activation="relu"))
+        # network.add(Dense(units=num_outputs, activation="softmax"))
 
-        return network
+        tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+        model = TFGPT2Model.from_pretrained('gpt2')
 
     """
     TODO: The original code takes a `start_token` argument at initialization,
@@ -40,7 +46,7 @@ class GeneratorTransformer(object):
     """
 
     def generate(self, sess):
-        outputs = sess.run(self.gen_x)
+        # outputs = sess.run(self.gen_x)
 
         """
         Dimension of outputs: [batch_size x seq_length]
@@ -49,7 +55,12 @@ class GeneratorTransformer(object):
         is a sequence of ints which represent the word number in the vocabulary.
         Confirm this by running on colab. ~ tensor of ints of shape (batch_size, seq_length)
         """
-        return outputs
+
+        # TODO: Fix this. This is just a general outline
+        generator = pipeline('text-generation', model=self.output_dir, tokenizer=self.tokenizer,
+                             max_length=self.sequence_length, num_return_sequences=self.batch_size)
+        outputs = generator(self.start_token)
+        return [output['generated-text'] for output in outputs]
 
     """
     TODO: This is a step in the following loop:
