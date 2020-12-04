@@ -1,17 +1,17 @@
 import numpy as np
 
-# import tensorflow as tf
 import tensorflow.compat.v1 as tf
 
 tf.disable_v2_behavior()
 import random
 from dataloader import Gen_Data_loader, Dis_dataloader
 from generator import Generator
+# from generator_transformer import GeneratorTransformer
 from rewarder import Rewarder
 from rollout_ppo import ROLLOUT
+# from rollout_transformer import ROLLOUT
 from target_lstm import TARGET_LSTM
 
-# import cPickle
 import pickle
 import os
 import time
@@ -66,6 +66,7 @@ def generate_samples(sess, trainable_model, batch_size, generated_num, output_fi
             fout.write(buffer)
 
 
+# Rollouts generator model
 def off_policy_samples(sess, trainable_model, batch_size, generated_num):
     off_policy_sample = []
     off_policy_probs = []
@@ -122,6 +123,12 @@ def main():
     dis_data_loader = Dis_dataloader(re_batch_size)
 
     # TODO: Reimpliment this class with same interface.
+    # generator = GeneratorTransformer(
+    #     vocab_size,
+    #     BATCH_SIZE,
+    #     SEQ_LENGTH,
+    #     START_TOKEN
+    # )
     generator = Generator(
         vocab_size,
         BATCH_SIZE,
@@ -144,6 +151,7 @@ def main():
     )
     target_params = pickle.load(open("save/target_params.pkl", "rb"), encoding="latin1")
     # TODO: Reimpliment this class with same interface. (target_transformer)
+    # I think we leave this as is, since it's the distribution we're trying to match? (Cailin)
     target_lstm = TARGET_LSTM(
         vocab_size,
         BATCH_SIZE,
@@ -160,7 +168,8 @@ def main():
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver(tf.global_variables())
 
-    # First, use the oracle model to provide the positive examples, which are sampled from the oracle data distribution
+    # First, use the oracle model to provide the positive examples,
+    #   which are sampled from the oracle data distribution
     generate_samples(sess, target_lstm, BATCH_SIZE, generated_num, positive_file)
     gen_data_loader.create_batches(positive_file)
     # ground_loss = target_loss(sess, target_lstm, gen_data_loader)
@@ -232,12 +241,15 @@ def main():
         # Train the generator for one step
         start = time.time()
         g_losses = []
+        # Draw trajectories (sequences) from generator
         off_samples, off_probs = off_policy_samples(sess, rollout, BATCH_SIZE, off_num)
         avg_reward = []
         for g_it in range(1):
+            # Compute MCMC reward for each trajectory
             for it in range(off_num // BATCH_SIZE):
                 rewards = rollout.get_reward(sess, off_samples[it], 8, rewarder)
                 avg_reward.append(rewards)
+            # Perform gradient update for generator
             baseline = np.zeros(SEQ_LENGTH)
             for it in range(1):
                 for it2 in range(off_num // BATCH_SIZE):

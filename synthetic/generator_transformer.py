@@ -3,25 +3,39 @@ import keras
 from keras.layers import Dense
 
 import tensorflow.compat.v1 as tf
-
 tf.disable_v2_behavior()
+
+from transformers import GPT2Tokenizer, TFGPT2Model
+from transformers import Trainer, TrainingArguments
+from transformers import pipeline, set_seed
 
 
 class GeneratorTransformer(object):
-    def __init__(self):
+    def __init__(self, num_emb, batch_size, sequence_length,
+                 start_token, learning_rate=0.005):
         self.network = self.init_network(10)
 
+        self.num_emb = num_emb
+        self.batch_size = batch_size
+        self.sequence_length = sequence_length
+        self.start_token = start_token
+        self.learning_rate = learning_rate
+
+        self.output_dir = "./gpt2-irl"
+
+
     """
-    TODO: Edit this to be the actual architecture and hyperparameters.
+    TODO:learn_ratehe actual architecture and hyperparameters.
     """
 
     def init_network(self, input_shape, num_outputs=10):
 
-        network = keras.Sequential()
-        network.add(Dense(input_shape, activation="relu"))
-        network.add(Dense(units=num_outputs, activation="softmax"))
+        # network = keras.Sequential()
+        # network.add(Dense(input_shape, activation="relu"))
+        # network.add(Dense(units=num_outputs, activation="softmax"))
 
-        return network
+        tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+        model = TFGPT2Model.from_pretrained('gpt2')
 
     """
     TODO: The original code takes a `start_token` argument at initialization,
@@ -33,16 +47,22 @@ class GeneratorTransformer(object):
     """
 
     def generate(self, sess):
-        outputs = sess.run(self.gen_x)
+        # outputs = sess.run(self.gen_x)
 
         """
         Dimension of outputs: [batch_size x seq_length]
         Not sure about last dimension, but seems like there a sampling operation and cast to int
         before the token is appended to `gen_x` in the original code, which implies that it
         is a sequence of ints which represent the word number in the vocabulary.
-        Confirm this by running on colab.
+        Confirm this by running on colab. ~ tensor of ints of shape (batch_size, seq_length)
         """
-        return outputs
+
+        # TODO: Fix this. This is just a general outline
+        # TODO: perhaps implement a Tokenizer
+        generator = pipeline('text-generation', model=self.output_dir, tokenizer=self.tokenizer,
+                             max_length=self.sequence_length, num_return_sequences=self.batch_size)
+        outputs = generator(self.start_token)
+        return [output['generated-text'] for output in outputs]
 
     """
     TODO: This is a step in the following loop:
@@ -87,18 +107,36 @@ class GeneratorTransformer(object):
         Take one step of optimization. Can be done via:
         https://keras.io/guides/writing_a_training_loop_from_scratch/
         """
-        outputs = sess.run(
-            [self.g_updates, self.g_loss],
-            feed_dict={
-                self.x: x,
-                self.rewards: rewards,
-                self.baseline: baseline,
-                self.off_policy_prob: offpolicy,
-                self.decay_weight: decay_weight,
-                self.learning_rate: learn_rate,
-            },
+        # outputs = sess.run(
+        #     [self.g_updates, self.g_loss],
+        #     feed_dict={
+        #         self.x: x,
+        #         self.rewards: rewards,
+        #         self.baseline: baseline,
+        #         self.off_policy_prob: offpolicy,
+        #         self.decay_weight: decay_weight,
+        #         self.learning_rate: learn_rate,
+        #     },
+        # )
+        # return outputs
+
+        # TODO: Fix this. Just a general outline
+        training_args = TrainingArguments(
+            output_dir=self.output_dir,
+            overwrite_output_dir=True,
+            num_train_epochs=1,
+            per_device_train_batch_size=self.batch_size,
+            learning_rate=learn_rate,
+            weight_decay=decay_weight
         )
-        return outputs
+        trainer = Trainer(
+            model=self.network,
+            args=training_args,
+            train_dataset=x,
+            eval_dataset=baseline
+        )
+        trainer.train()
+        trainer.save_model()
 
     """
     TODO: This just selects the optimizer object. 
