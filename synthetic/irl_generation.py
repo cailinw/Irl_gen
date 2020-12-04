@@ -123,7 +123,12 @@ def main():
     dis_data_loader = Dis_dataloader(re_batch_size)
 
     # TODO: Reimpliment this class with same interface.
-    # generator = GeneratorTransformer()
+    # generator = GeneratorTransformer(
+    #     vocab_size,
+    #     BATCH_SIZE,
+    #     SEQ_LENGTH,
+    #     START_TOKEN
+    # )
     generator = Generator(
         vocab_size,
         BATCH_SIZE,

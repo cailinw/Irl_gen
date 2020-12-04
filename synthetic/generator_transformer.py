@@ -23,8 +23,9 @@ class GeneratorTransformer(object):
 
         self.output_dir = "./gpt2-irl"
 
+
     """
-    TODO: Edit this to be the actual architecture and hyperparameters.
+    TODO:learn_ratehe actual architecture and hyperparameters.
     """
 
     def init_network(self, input_shape, num_outputs=10):
@@ -57,6 +58,7 @@ class GeneratorTransformer(object):
         """
 
         # TODO: Fix this. This is just a general outline
+        # TODO: perhaps implement a Tokenizer
         generator = pipeline('text-generation', model=self.output_dir, tokenizer=self.tokenizer,
                              max_length=self.sequence_length, num_return_sequences=self.batch_size)
         outputs = generator(self.start_token)
@@ -105,18 +107,36 @@ class GeneratorTransformer(object):
         Take one step of optimization. Can be done via:
         https://keras.io/guides/writing_a_training_loop_from_scratch/
         """
-        outputs = sess.run(
-            [self.g_updates, self.g_loss],
-            feed_dict={
-                self.x: x,
-                self.rewards: rewards,
-                self.baseline: baseline,
-                self.off_policy_prob: offpolicy,
-                self.decay_weight: decay_weight,
-                self.learning_rate: learn_rate,
-            },
+        # outputs = sess.run(
+        #     [self.g_updates, self.g_loss],
+        #     feed_dict={
+        #         self.x: x,
+        #         self.rewards: rewards,
+        #         self.baseline: baseline,
+        #         self.off_policy_prob: offpolicy,
+        #         self.decay_weight: decay_weight,
+        #         self.learning_rate: learn_rate,
+        #     },
+        # )
+        # return outputs
+
+        # TODO: Fix this. Just a general outline
+        training_args = TrainingArguments(
+            output_dir=self.output_dir,
+            overwrite_output_dir=True,
+            num_train_epochs=1,
+            per_device_train_batch_size=self.batch_size,
+            learning_rate=learn_rate,
+            weight_decay=decay_weight
         )
-        return outputs
+        trainer = Trainer(
+            model=self.network,
+            args=training_args,
+            train_dataset=x,
+            eval_dataset=baseline
+        )
+        trainer.train()
+        trainer.save_model()
 
     """
     TODO: This just selects the optimizer object. 
