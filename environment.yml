@@ -10,6 +10,7 @@ dependencies:
         - tqdm
         - wheel
         - matplotlib==3.2.1
+        - keras
         - tensorflow==2.3.0
         - nltk==3.2.5
         - transformers
