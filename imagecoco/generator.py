@@ -1,4 +1,6 @@
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from tensorflow.python.ops import tensor_array_ops, control_flow_ops
 import numpy as np
 
@@ -220,8 +222,8 @@ class Generator(object):
         midlayer.insert(0, self.hidden_dim)
         midlayer.append(self.num_emb)
         assert len(midlayer) >= 2
-        for i in xrange(1, len(midlayer)):
-            print i
+        for i in range(1, len(midlayer)):
+            print(i)
             self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[i - 1], midlayer[i]])))
             self.Wbo_list.append(tf.Variable(self.init_matrix([midlayer[i]])))
 

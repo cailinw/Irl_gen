@@ -1,5 +1,7 @@
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import random
 from dataloader import Gen_Data_loader, Dis_dataloader
 from generator import Generator
@@ -71,7 +73,7 @@ def pre_train_epoch(sess, trainable_model, data_loader):
     supervised_g_losses = []
     data_loader.reset_pointer()
 
-    for it in xrange(data_loader.num_batch):
+    for it in range(data_loader.num_batch):
         batch = data_loader.next_batch()
         _, g_loss = trainable_model.pretrain_step(sess, batch)
         supervised_g_losses.append(g_loss)
@@ -104,18 +106,18 @@ def main():
     log = open('save/experiment-log-'+str(ent_w)+'.txt', 'w')
     #  pre-train generator
     if restore is False:
-        print 'Start pre-training...'
+        print('Start pre-training...')
         log.write('pre-training...\n')
-        for epoch in xrange(PRE_EPOCH_NUM):
+        for epoch in range(PRE_EPOCH_NUM):
             loss = pre_train_epoch(sess, generator, gen_data_loader)
             if epoch % 5 == 0:
-                print 'pre-train epoch ', epoch, 'test_loss ', loss
+                print('pre-train epoch ', epoch, 'test_loss ', loss)
                 buffer = 'epoch:\t' + str(epoch) + '\tnll:\t' + str(loss) + '\n'
                 log.write(buffer)
             if epoch % 20 == 0 and epoch > 0:
                 generate_samples(sess, generator, BATCH_SIZE, generated_num, pretrain_file_prefix + str(epoch))
 
-        print 'Start pre-training rewarder...'
+        print('Start pre-training rewarder...')
         start = time.time()
         for _ in range(1):
             generate_samples(sess, generator, BATCH_SIZE, generated_num, negative_file)
@@ -124,26 +126,26 @@ def main():
             for _ in range(1):
                 dis_data_loader.reset_pointer()
                 r_losses = []
-                for it in xrange(dis_data_loader.num_batch):
+                for it in range(dis_data_loader.num_batch):
                     x_text = dis_data_loader.next_batch()
                     _, r_loss = rewarder.reward_train_step(sess, x_text, np.ones(BATCH_SIZE), 1.0, re_dropout_keep_prob, 0.01)
                     r_losses.append(r_loss)
-                print 'reward_loss', np.mean(r_losses)
+                print('reward_loss', np.mean(r_losses))
         speed = time.time() - start
-        print 'Reward pre_training Speed:{:.3f}'.format(speed)
+        print('Reward pre_training Speed:{:.3f}'.format(speed))
 
         checkpoint_path = os.path.join('save', 'exper_40.ckpt')
         saver.save(sess, checkpoint_path)
     else:
-        print 'Restore pretrained model ...'
+        print('Restore pretrained model ...')
         log.write('Restore pre-trained model...\n')
         ckpt = tf.train.get_checkpoint_state('save')
         saver.restore(sess, ckpt.model_checkpoint_path)
     # by setting the parameters to 0.0 and 1.0, we didn't use the mixed policy RL training in SeqGAN
     rollout = ROLLOUT(generator, 0.0, 1.0)
 
-    print '#########################################################################'
-    print 'Start Adversarial Training...'
+    print('#########################################################################')
+    print('Start Adversarial Training...')
     log.write('adversarial training...\n')
     for total_batch in range(TOTAL_BATCH):
         if total_batch % 5 == 0 or total_batch == TOTAL_BATCH - 1:
@@ -163,7 +165,7 @@ def main():
                 _, g_loss = generator.rl_train_step(sess, off_samples[it2], avg_reward[it2], baseline, off_probs[it2], ent_w)
                 g_losses.append(g_loss)
         speed = time.time() - start
-        print 'MaxentPolicy Gradient {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, np.mean(g_losses))
+        print('MaxentPolicy Gradient {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, np.mean(g_losses)))
 
         # Update roll-out parameters
         rollout.update_params()
@@ -176,7 +178,7 @@ def main():
             dis_data_loader.load_train_data(positive_file, negative_file)
             for _ in range(3):
                 dis_data_loader.reset_pointer()
-                for it in xrange(dis_data_loader.num_batch):
+                for it in range(dis_data_loader.num_batch):
                     x_text= dis_data_loader.next_batch()
                     weights = rewarder.reward_weight(sess, x_text, generator)
                     _, r_loss = rewarder.reward_train_step(sess, x_text, weights, 1, re_dropout_keep_prob, R_rate * np.exp(-(total_batch // R_decay)))
@@ -184,7 +186,7 @@ def main():
 
         avg_loss = np.mean(r_loss_list)
         speed = time.time() - start
-        print 'Reward training {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, avg_loss)
+        print('Reward training {} round, Speed:{:.3f}, Loss:{:.3f}'.format(total_batch, speed, avg_loss))
 
     log.close()
 
